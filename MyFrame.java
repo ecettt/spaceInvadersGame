@@ -15,6 +15,7 @@ public class MyFrame extends JFrame implements ActionListener {
     JMenu fileMenu;
     JMenu helpMenu;
     JButton startButton;
+    GamePanel gamePanel;
     Font f = new Font(Font.DIALOG, Font.BOLD, 23);
     MyFrame(){
         loginPanel = new LoginPanel();
@@ -80,16 +81,19 @@ public class MyFrame extends JFrame implements ActionListener {
                 public void actionPerformed(ActionEvent e) {
                     levelStartPanel.setVisible(false);
                     ((Timer) e.getSource()).stop();
-                    GamePanel gamePanel = new GamePanel();
+                    gamePanel = new GamePanel();
                     setContentPane(gamePanel);
                     revalidate();
                     gamePanel.requestFocusInWindow();
+
                 }
             });
             // Start the timer
             timer.start();
 
+
         }
+
     }
 }
 

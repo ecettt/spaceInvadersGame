@@ -10,15 +10,18 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
     static final int PANEL_HEIGHT = 700;
     private int spaceShipX = 325; //initial x position of the spaceship
     private int spaceShipY = 560; //initial y position of the spaceship
+    private int spaceShipHealth = 3;
     private final int spaceshipWidth = 50; // width of the spaceship
     private final int spaceshipHeight = 50; // height of the spaceship
     private int spaceShipSpeed = 10;
     private List<Rectangle> bullets;
     public static List<Alien> aliens;
-
+    public static final Object syncObject = new Object();
 
     public int score = 0;
     public static boolean gameOver = false;
+    int delay = 2000;
+    int level = 1;
 
     Image backgroundImage = new ImageIcon("images/spaceImage.png").getImage();
     public List<Alien> getAliens(){
@@ -40,7 +43,6 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         for(Rectangle bullet : bullets){
             g.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
         }
-
         //aliens
         for(Alien alien : aliens){
             alien.draw(g);
@@ -50,11 +52,16 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         g.setFont(new Font("Arial", Font.BOLD, 20));
         g.drawString(String.valueOf(score), 350, 20);
 
-        if(gameOver){
-            g.setColor(Color.RED);
-            g.setFont(new Font("Arial", Font.BOLD, 32));
-            g.drawString("Game Over", getWidth()/2-100, getHeight()/2);
-        }
+        //spaceship health
+        g.setColor(Color.RED);
+        g.setFont(new Font("Arial", Font.BOLD, 20));
+        g.drawString("\u2665"+" x"+ spaceShipHealth,150, 20);
+
+        //level
+        g.setColor(Color.RED);
+        g.setFont(new Font("Arial", Font.BOLD, 20));
+        g.drawString("Level: "+ level,40, 20);
+
 
     }
     public GamePanel() {
@@ -65,7 +72,32 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         aliens = new ArrayList<>();
         Timer timer = new Timer(20, this);
         timer.start();
-        Alien.spawnAliens();
+        spawnAliens();
+    }
+
+    private void nextLevel() { //Score her 500 arttığında level artışı ve uzaylıların çıkış hızının artışı
+        if (score % 500 == 0 && score >= 500) {
+            level++;
+            Alien.alienSpeed += 0.5;
+            delay -= 300;
+            System.out.println(Alien.alienSpeed);
+            System.out.println(level);
+            System.out.println(delay);
+        }
+    }
+    private void spawnAliens(){
+        Timer alienSpawnTimer = new Timer(delay, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(!GamePanel.gameOver){
+                    synchronized (syncObject){
+                        aliens.add(new Alien());
+                    }
+                }
+            }
+        });
+        alienSpawnTimer.start();
+
     }
     private void updateCharacterPosition(){
         // Move the character based on the arrow keys
@@ -97,8 +129,6 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         }
     }
 
-
-
     private void checkCollisions(){
         //check for bullet enemy collisions
         Iterator<Rectangle> bulletIterator = bullets.iterator();
@@ -114,14 +144,16 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
                     bulletIterator.remove();
 
                     if(alien.isDestroyed()){
-                        if(alien.alienImage == Alien.alienImages.get(0)){
+                        if(alien.alienImage.equals(Alien.alienImages.get(0).getImage())||
+                           alien.alienImage.equals(Alien.alienImages.get(1).getImage())||
+                           alien.alienImage.equals(Alien.alienImages.get(2).getImage())){
                             alienIterator.remove();
-                            score+=5;
+                            score+=10; //increase the score by 10 if one of the purple aliens
                         }else {
                             alienIterator.remove();
-                            score++;
+                            score+=5; //increase the score by 5 if one of the green aliens
                         }
-
+                        nextLevel();
                     }
                 }
             }
@@ -131,12 +163,37 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         for(Alien alien : aliens){
             if(spaceShipRactangle.intersects(alien.getX(), alien.getY(), Alien.alienWidth, Alien.alienHeight))
                 gameOver=true;
+            else if(alien.hasCollision(spaceShipRactangle)){
+                spaceShipHealth--;
+                System.out.println(spaceShipHealth);
+                if(spaceShipHealth == 0)
+                    gameOver=true;
+
+            }
         }
+
     }
     private void checkGameOver(){
         if(gameOver){
-            aliens.clear();
+            for (Alien a: aliens) {
+                a.stop();
+            }
+            synchronized (syncObject){
+                aliens.clear();
+            }
             bullets.clear();
+
+            MyFrame frame = (MyFrame) SwingUtilities.getWindowAncestor(this);
+            frame.getContentPane().remove(this);  // Remove the current GamePanel from the frame
+
+            GameOverPanel gameOverPanel = new GameOverPanel();
+            frame.setContentPane(gameOverPanel);  // Set the GameOverPanel as the new content pane
+
+            frame.pack();
+            frame.revalidate();
+            frame.repaint();
+
+
         }
     }
     private boolean isKeyPressed(int keyCode){
@@ -172,12 +229,15 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         if(!gameOver){
             updateCharacterPosition();
             updateBulletPosition();
-            Alien.updateAlienPosition();
+            synchronized (syncObject){
+                for(Alien alien: aliens){
+                    alien.updateAlienPosition();
+                }
+            }
             checkCollisions(); //check for collisions
             checkGameOver();
             repaint();
         }
-
     }
 }
 
