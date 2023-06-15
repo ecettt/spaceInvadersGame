@@ -2,6 +2,7 @@ import javax.swing.*;
 import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
@@ -18,10 +19,11 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
     public static List<Alien> aliens;
     public static final Object syncObject = new Object();
 
-    public int score = 0;
+    public static int score = 0;
     public static boolean gameOver = false;
     int delay = 2000;
     int level = 1;
+    static String activeUser;
 
     Image backgroundImage = new ImageIcon("images/spaceImage.png").getImage();
     public List<Alien> getAliens(){
@@ -97,10 +99,8 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
             }
         });
         alienSpawnTimer.start();
-
     }
     private void updateCharacterPosition(){
-        // Move the character based on the arrow keys
         if (isKeyPressed(KeyEvent.VK_UP)) {
             spaceShipY -= spaceShipSpeed;  // Move character up
         } else if (isKeyPressed(KeyEvent.VK_DOWN)) {
@@ -130,7 +130,6 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
     }
 
     private void checkCollisions(){
-        //check for bullet enemy collisions
         Iterator<Rectangle> bulletIterator = bullets.iterator();
         while(bulletIterator.hasNext()){
             Rectangle bullet = bulletIterator.next();
@@ -158,14 +157,13 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
                 }
             }
         }
-        //check for spaceShip enemy collision
-        Rectangle spaceShipRactangle = new Rectangle(spaceShipX, spaceShipY, spaceshipWidth, spaceshipHeight);
+
+        Rectangle spaceShipRectangle = new Rectangle(spaceShipX, spaceShipY, spaceshipWidth, spaceshipHeight);
         for(Alien alien : aliens){
-            if(spaceShipRactangle.intersects(alien.getX(), alien.getY(), Alien.alienWidth, Alien.alienHeight))
+            if(spaceShipRectangle.intersects(alien.getX(), alien.getY(), Alien.alienWidth, Alien.alienHeight))
                 gameOver=true;
-            else if(alien.hasCollision(spaceShipRactangle)){
+            else if(alien.hasCollision(spaceShipRectangle)){
                 spaceShipHealth--;
-                System.out.println(spaceShipHealth);
                 if(spaceShipHealth == 0)
                     gameOver=true;
 
@@ -173,7 +171,7 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
         }
 
     }
-    private void checkGameOver(){
+    private void checkGameOver() throws IOException {
         if(gameOver){
             for (Alien a: aliens) {
                 a.stop();
@@ -193,6 +191,7 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
             frame.revalidate();
             frame.repaint();
 
+            FileUtil.updateScore(activeUser, StringUtil.padRight(String.valueOf(score), 5, ' '));
 
         }
     }
@@ -234,8 +233,13 @@ public class GamePanel extends JPanel implements KeyListener, ActionListener{
                     alien.updateAlienPosition();
                 }
             }
-            checkCollisions(); //check for collisions
-            checkGameOver();
+            checkCollisions();
+
+            try {
+                checkGameOver();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
             repaint();
         }
     }

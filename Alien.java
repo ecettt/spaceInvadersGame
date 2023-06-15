@@ -40,7 +40,7 @@ public class Alien {
         alienBullets = new ArrayList<>();
         alienImageIndex = getRandomAlienImageIndex();
         alienImage = alienImages.get(alienImageIndex).getImage();
-        bulletDelay = random.nextInt(10000); //Random delay between 5 and 13 seconds
+        bulletDelay = random.nextInt(10000);
         shootTimer = new Timer(3000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

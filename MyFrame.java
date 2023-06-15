@@ -2,9 +2,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 
 
-public class MyFrame extends JFrame implements ActionListener {
+public class MyFrame extends JFrame implements ActionListener, ComponentListener {
     LoginPanel loginPanel;
     JMenuBar menuBar;
     JMenuItem registerItem;
@@ -16,6 +18,8 @@ public class MyFrame extends JFrame implements ActionListener {
     JMenu helpMenu;
     JButton startButton;
     GamePanel gamePanel;
+    RegisterPanel register;
+    HighScorePanel highScore;
     Font f = new Font(Font.DIALOG, Font.BOLD, 23);
     MyFrame(){
         loginPanel = new LoginPanel();
@@ -56,6 +60,8 @@ public class MyFrame extends JFrame implements ActionListener {
         menuBar.add(helpMenu);
         playGameItem.addActionListener(this);
         quitItem.addActionListener(this);
+        registerItem.addActionListener(this);
+        highScoreItem.addActionListener(this);
         this.setJMenuBar(menuBar);
     }
 
@@ -72,8 +78,48 @@ public class MyFrame extends JFrame implements ActionListener {
             if (option == JOptionPane.YES_OPTION)
                 System.exit(0);
         }
-        else if(e.getSource() == playGameItem || e.getSource() == startButton){
+        else if(e.getSource() == playGameItem || e.getSource() == startButton) {
             loginPanel.setVisible(false);
+            register = new RegisterPanel(false);
+            register.addComponentListener(this);
+            this.setContentPane(register);
+            revalidate();
+        }
+
+        else if(e.getSource() == registerItem){
+            loginPanel.setVisible(false);
+            register = new RegisterPanel(true);
+            register.addComponentListener(this);
+            this.setContentPane(register);
+            revalidate();
+        }
+        else if(e.getSource() ==highScoreItem){
+            loginPanel.setVisible(false);
+            highScore = new HighScorePanel();
+            highScore.addComponentListener(this);
+            this.setContentPane(highScore);
+            revalidate();
+        }
+    }
+
+    @Override
+    public void componentResized(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void componentMoved(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void componentShown(ComponentEvent e) {
+
+    }
+
+    @Override
+    public void componentHidden(ComponentEvent e) {
+        if(!register.onlyRegister){
             LevelStartPanel levelStartPanel = new LevelStartPanel();
             this.setContentPane(levelStartPanel);
             Timer timer = new Timer(3000, new ActionListener() {
@@ -85,16 +131,21 @@ public class MyFrame extends JFrame implements ActionListener {
                     setContentPane(gamePanel);
                     revalidate();
                     gamePanel.requestFocusInWindow();
-
                 }
             });
             // Start the timer
             timer.start();
+        }
+        if(register.onlyRegister){
+            loginPanel.setVisible(true);
+            this.setContentPane(loginPanel);
+            revalidate();
+
+        }
 
 
         }
 
-    }
 }
 
 
